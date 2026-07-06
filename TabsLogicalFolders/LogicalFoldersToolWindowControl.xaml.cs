@@ -11,6 +11,7 @@ namespace TabsLogicalFolders
     public partial class LogicalFoldersToolWindowControl : UserControl
     {
         public event Action<string> DocumentActivated;
+        public enum NodeKind { Folder, Document };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LogicalFoldersToolWindowControl"/> class.
@@ -22,19 +23,18 @@ namespace TabsLogicalFolders
 
         public void PopulateTree(List<string> items)
         {
-            var ungroupedNode = new TreeViewItem { Header = "Ungrouped" };
+            var ungroupedNode = new TreeViewItem { Header = "Ungrouped", Tag = NodeKind.Folder };
             foreach (var item in items)
-                ungroupedNode.Items.Add(new TreeViewItem { Header = item });
+                ungroupedNode.Items.Add(new TreeViewItem { Header = item, Tag = NodeKind.Document });
             LogicalFolderTree.Items.Add(ungroupedNode);
         }
 
         private void LogicalFolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var item = (TreeViewItem)e.NewValue;
-            // Si el item no es "una carpeta logica", es decir, no tiene hijos
-            if (item.Items.Count == 0)
+            if ((NodeKind)item.Tag == NodeKind.Document)
             {
-                DocumentActivated.Invoke(item.Header.ToString());
+                DocumentActivated?.Invoke(item.Header.ToString());
             }
         }
     }
