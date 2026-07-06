@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.ComponentModel.Design;
 using System.Linq;
@@ -99,6 +101,11 @@ namespace TabsLogicalFolders
                 }
 
                 LogicalFoldersToolWindowControl content = (LogicalFoldersToolWindowControl)window.Content;
+                content.DocumentActivated += moniker =>
+                {
+                    VsShellUtilities.IsDocumentOpen(this.package, moniker, VSConstants.LOGVIEWID.Primary_guid, out _, out _, out IVsWindowFrame frame);
+                    frame?.Show();
+                };
                 content.PopulateTree(rdt.Select(s => s.Moniker).ToList());
             });
         }

@@ -9,5 +9,5 @@
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="300"
              Name="MyToolWindow">
-    <TreeView x:Name="LogicalFolderTree"/>
+    <TreeView x:Name="LogicalFolderTree" SelectedItemChanged="LogicalFolderTree_SelectedItemChanged"/>
 </UserControl>
