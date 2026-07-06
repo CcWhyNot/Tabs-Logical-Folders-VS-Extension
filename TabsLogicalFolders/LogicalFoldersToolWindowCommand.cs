@@ -1,6 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using System;
 using System.ComponentModel.Design;
+using System.Linq;
 using Task = System.Threading.Tasks.Task;
 
 namespace TabsLogicalFolders
@@ -82,6 +83,13 @@ namespace TabsLogicalFolders
         /// <param name="e">The event args.</param>
         private void Execute(object sender, EventArgs e)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var rdt = new RunningDocumentTable(this.package);
+
+            foreach (var document in rdt)
+                System.Diagnostics.Debug.WriteLine($"Este es el documento: {document.Moniker}");
+
             this.package.JoinableTaskFactory.RunAsync(async delegate
             {
                 ToolWindowPane window = await this.package.ShowToolWindowAsync(typeof(LogicalFoldersToolWindow), 0, true, this.package.DisposalToken);
@@ -89,6 +97,9 @@ namespace TabsLogicalFolders
                 {
                     throw new NotSupportedException("Cannot create tool window");
                 }
+
+                LogicalFoldersToolWindowControl content = (LogicalFoldersToolWindowControl)window.Content;
+                content.PopulateTree(rdt.Select(s => s.Moniker).ToList());
             });
         }
     }

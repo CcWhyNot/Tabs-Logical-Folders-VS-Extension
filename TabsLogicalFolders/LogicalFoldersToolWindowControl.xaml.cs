@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Windows;
+﻿using System.Collections.Generic;
 using System.Windows.Controls;
 
 namespace TabsLogicalFolders
@@ -17,18 +16,12 @@ namespace TabsLogicalFolders
             this.InitializeComponent();
         }
 
-        /// <summary>
-        /// Handles click on the button by displaying a message box.
-        /// </summary>
-        /// <param name="sender">The event sender.</param>
-        /// <param name="e">The event args.</param>
-        [SuppressMessage("Microsoft.Globalization", "CA1300:SpecifyMessageBoxOptions", Justification = "Sample code")]
-        [SuppressMessage("StyleCop.CSharp.NamingRules", "SA1300:ElementMustBeginWithUpperCaseLetter", Justification = "Default event handler naming pattern")]
-        private void button1_Click(object sender, RoutedEventArgs e)
+        public void PopulateTree(List<string> items)
         {
-            MessageBox.Show(
-                string.Format(System.Globalization.CultureInfo.CurrentUICulture, "Invoked '{0}'", this.ToString()),
-                "LogicalFoldersToolWindow");
+            var ungroupedNode = new TreeViewItem { Header = "Ungrouped" };
+            foreach (var item in items)
+                ungroupedNode.Items.Add(new TreeViewItem { Header = item });
+            LogicalFolderTree.Items.Add(ungroupedNode);
         }
     }
 }
