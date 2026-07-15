@@ -1,5 +1,9 @@
-﻿using Microsoft.VisualStudio.Shell;
+﻿using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace TabsLogicalFolders
@@ -29,6 +33,49 @@ namespace TabsLogicalFolders
             // we are not calling Dispose on this object. This is because ToolWindowPane calls Dispose on
             // the object returned by the Content property.
             this.Content = new LogicalFoldersToolWindowControl();
+        }
+
+        protected override void Initialize()
+        {
+            base.Initialize();
+
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var uiShell = this.GetService(typeof(SVsUIShell)) as IVsUIShell;
+
+            uiShell.GetDocumentWindowEnum(out IEnumWindowFrames windowFramesEnum);
+
+            var tabs = new List<LogicalFoldersToolWindowControl.TabInfo>();
+            var frameBuffer = new IVsWindowFrame[1];
+            while (windowFramesEnum.Next(1, frameBuffer, out uint fetched) == VSConstants.S_OK && fetched == 1)
+            {
+                IVsWindowFrame frame = frameBuffer[0];
+
+                frame.GetProperty((int)__VSFPROPID.VSFPROPID_Caption, out object captionObj);
+                frame.GetProperty((int)__VSFPROPID.VSFPROPID_pszMkDocument, out object monikerObj);
+
+                string caption = captionObj as string;
+                string moniker = monikerObj as string;
+
+                bool esRutaReal = !string.IsNullOrEmpty(moniker) && Path.IsPathRooted(moniker);
+
+                tabs.Add(new LogicalFoldersToolWindowControl.TabInfo
+                {
+                    Caption = caption,
+                    Moniker = moniker,
+                    Kind = esRutaReal ? LogicalFoldersToolWindowControl.NodeKind.Document : LogicalFoldersToolWindowControl.NodeKind.Other,
+                });
+
+            }
+
+            LogicalFoldersToolWindowControl content = (LogicalFoldersToolWindowControl)this.Content;
+            content.DocumentActivated += moniker =>
+            {
+                VsShellUtilities.IsDocumentOpen(this, moniker, VSConstants.LOGVIEWID.Primary_guid, out _, out _, out IVsWindowFrame frame);
+                frame?.Show();
+            };
+            content.PopulateTree(tabs);
+
         }
     }
 }

@@ -1,10 +1,6 @@
-﻿using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.VisualStudio.Shell;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.IO;
 using Task = System.Threading.Tasks.Task;
 
 namespace TabsLogicalFolders
@@ -88,32 +84,6 @@ namespace TabsLogicalFolders
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var uiShell = Package.GetGlobalService(typeof(SVsUIShell)) as IVsUIShell;
-            uiShell.GetDocumentWindowEnum(out IEnumWindowFrames windowFramesEnum);
-
-            var tabs = new List<LogicalFoldersToolWindowControl.TabInfo>();
-            var frameBuffer = new IVsWindowFrame[1];
-            while (windowFramesEnum.Next(1, frameBuffer, out uint fetched) == VSConstants.S_OK && fetched == 1)
-            {
-                IVsWindowFrame frame = frameBuffer[0];
-
-                frame.GetProperty((int)__VSFPROPID.VSFPROPID_Caption, out object captionObj);
-                frame.GetProperty((int)__VSFPROPID.VSFPROPID_pszMkDocument, out object monikerObj);
-
-                string caption = captionObj as string;
-                string moniker = monikerObj as string;
-
-                bool esRutaReal = !string.IsNullOrEmpty(moniker) && Path.IsPathRooted(moniker);
-
-                tabs.Add(new LogicalFoldersToolWindowControl.TabInfo
-                {
-                    Caption = caption,
-                    Moniker = moniker,
-                    Kind = esRutaReal ? LogicalFoldersToolWindowControl.NodeKind.Document : LogicalFoldersToolWindowControl.NodeKind.Other,
-                });
-
-            }
-
             this.package.JoinableTaskFactory.RunAsync(async delegate
             {
                 ToolWindowPane window = await this.package.ShowToolWindowAsync(typeof(LogicalFoldersToolWindow), 0, true, this.package.DisposalToken);
@@ -122,13 +92,6 @@ namespace TabsLogicalFolders
                     throw new NotSupportedException("Cannot create tool window");
                 }
 
-                LogicalFoldersToolWindowControl content = (LogicalFoldersToolWindowControl)window.Content;
-                content.DocumentActivated += moniker =>
-                {
-                    VsShellUtilities.IsDocumentOpen(this.package, moniker, VSConstants.LOGVIEWID.Primary_guid, out _, out _, out IVsWindowFrame frame);
-                    frame?.Show();
-                };
-                content.PopulateTree(tabs);
             });
         }
     }
