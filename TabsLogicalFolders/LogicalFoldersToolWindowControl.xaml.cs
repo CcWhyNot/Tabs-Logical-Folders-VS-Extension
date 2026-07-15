@@ -30,6 +30,8 @@ namespace TabsLogicalFolders
 
         public void PopulateTree(List<TabInfo> items)
         {
+            LogicalFolderTree.Items.Clear();
+
             var ungroupedNode = new TreeViewItem { Header = "Ungrouped", Tag = (kind: NodeKind.Folder, Moniker: (string)null) };
             var otherNode = new TreeViewItem { Header = "Other", Tag = (NodeKind.Other, Moniker: (string)null) };
             foreach (var item in items)
@@ -46,6 +48,8 @@ namespace TabsLogicalFolders
         private void LogicalFolderTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             var item = (TreeViewItem)e.NewValue;
+            if (item == null) return;
+
             var (kind, moniker) = ((NodeKind, string))item.Tag;
             if (kind != NodeKind.Folder && !string.IsNullOrEmpty(moniker))
             {

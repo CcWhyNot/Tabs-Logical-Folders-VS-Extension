@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace TabsLogicalFolders
@@ -20,8 +21,13 @@ namespace TabsLogicalFolders
     /// </para>
     /// </remarks>
     [Guid("371eae9a-611e-4783-8d09-a9416c76b7e1")]
-    public class LogicalFoldersToolWindow : ToolWindowPane
+    public class LogicalFoldersToolWindow : ToolWindowPane, IVsRunningDocTableEvents
     {
+
+        private RunningDocumentTable rdt;
+        private uint rdtCookie;
+        private LogicalFoldersToolWindowControl content;
+        private HashSet<(string Caption, string Moniker)> lastTabs = new HashSet<(string, string)>();
         /// <summary>
         /// Initializes a new instance of the <see cref="LogicalFoldersToolWindow"/> class.
         /// </summary>
@@ -39,6 +45,57 @@ namespace TabsLogicalFolders
         {
             base.Initialize();
 
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            content = (LogicalFoldersToolWindowControl)this.Content;
+            content.DocumentActivated += moniker =>
+            {
+                var frame = FindFrameByMoniker(moniker);
+                frame?.Show();
+            };
+
+            rdt = new RunningDocumentTable(this);
+            rdtCookie = rdt.Advise(this);
+
+            Microsoft.VisualStudio.Shell.Events.SolutionEvents.OnAfterBackgroundSolutionLoadComplete += OnSolutionLoadComplete;
+
+            RefreshTree();
+        }
+
+        private IVsWindowFrame FindFrameByMoniker(string moniker)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var uiShell = this.GetService(typeof(SVsUIShell)) as IVsUIShell;
+            uiShell.GetDocumentWindowEnum(out IEnumWindowFrames windowFramesEnum);
+
+            var frameBuffer = new IVsWindowFrame[1];
+            while (windowFramesEnum.Next(1, frameBuffer, out uint fetched) == VSConstants.S_OK && fetched == 1)
+            {
+                frameBuffer[0].GetProperty((int)__VSFPROPID.VSFPROPID_pszMkDocument, out object monikerObj);
+                if (moniker.Equals(monikerObj as string)) return frameBuffer[0];
+            }
+
+            return null;
+        }
+        private void OnSolutionLoadComplete(object sender, EventArgs e)
+        {
+            RefreshTree();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                rdt?.Unadvise(rdtCookie);
+                Microsoft.VisualStudio.Shell.Events.SolutionEvents.OnAfterBackgroundSolutionLoadComplete -= OnSolutionLoadComplete;
+            }
+            base.Dispose(disposing);
+        }
+
+
+        private void RefreshTree()
+        {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             var uiShell = this.GetService(typeof(SVsUIShell)) as IVsUIShell;
@@ -68,14 +125,32 @@ namespace TabsLogicalFolders
 
             }
 
-            LogicalFoldersToolWindowControl content = (LogicalFoldersToolWindowControl)this.Content;
-            content.DocumentActivated += moniker =>
-            {
-                VsShellUtilities.IsDocumentOpen(this, moniker, VSConstants.LOGVIEWID.Primary_guid, out _, out _, out IVsWindowFrame frame);
-                frame?.Show();
-            };
-            content.PopulateTree(tabs);
+            var currentTabs = new HashSet<(string, string)>(tabs.Select(t => (t.Caption, t.Moniker)));
+            if (currentTabs.SetEquals(lastTabs)) return;
 
+            lastTabs = currentTabs;
+            content.PopulateTree(tabs);
+        }
+
+        public int OnAfterAttributeChange(uint docCookie, uint grfAttribs) => VSConstants.S_OK;
+        public int OnBeforeDocumentWindowShow(uint docCookie, int fFirstShow, IVsWindowFrame pFrame) => VSConstants.S_OK;
+        public int OnAfterDocumentWindowHide(uint docCookie, IVsWindowFrame pFrame) => VSConstants.S_OK;
+        public int OnAfterFirstDocumentLock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
+        {
+            RefreshTree();
+            return VSConstants.S_OK;
+        }
+
+        public int OnBeforeLastDocumentUnlock(uint docCookie, uint dwRDTLockType, uint dwReadLocksRemaining, uint dwEditLocksRemaining)
+        {
+            RefreshTree();
+            return VSConstants.S_OK;
+        }
+
+        public int OnAfterSave(uint docCookie)
+        {
+            RefreshTree();
+            return VSConstants.S_OK;
         }
     }
 }
