@@ -2,8 +2,9 @@
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
-using System.Linq;
+using System.IO;
 using Task = System.Threading.Tasks.Task;
 
 namespace TabsLogicalFolders
@@ -87,10 +88,31 @@ namespace TabsLogicalFolders
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var rdt = new RunningDocumentTable(this.package);
+            var uiShell = Package.GetGlobalService(typeof(SVsUIShell)) as IVsUIShell;
+            uiShell.GetDocumentWindowEnum(out IEnumWindowFrames windowFramesEnum);
 
-            foreach (var document in rdt)
-                System.Diagnostics.Debug.WriteLine($"Este es el documento: {document.Moniker}");
+            var tabs = new List<LogicalFoldersToolWindowControl.TabInfo>();
+            var frameBuffer = new IVsWindowFrame[1];
+            while (windowFramesEnum.Next(1, frameBuffer, out uint fetched) == VSConstants.S_OK && fetched == 1)
+            {
+                IVsWindowFrame frame = frameBuffer[0];
+
+                frame.GetProperty((int)__VSFPROPID.VSFPROPID_Caption, out object captionObj);
+                frame.GetProperty((int)__VSFPROPID.VSFPROPID_pszMkDocument, out object monikerObj);
+
+                string caption = captionObj as string;
+                string moniker = monikerObj as string;
+
+                bool esRutaReal = !string.IsNullOrEmpty(moniker) && Path.IsPathRooted(moniker);
+
+                tabs.Add(new LogicalFoldersToolWindowControl.TabInfo
+                {
+                    Caption = caption,
+                    Moniker = moniker,
+                    Kind = esRutaReal ? LogicalFoldersToolWindowControl.NodeKind.Document : LogicalFoldersToolWindowControl.NodeKind.Other,
+                });
+
+            }
 
             this.package.JoinableTaskFactory.RunAsync(async delegate
             {
@@ -106,7 +128,7 @@ namespace TabsLogicalFolders
                     VsShellUtilities.IsDocumentOpen(this.package, moniker, VSConstants.LOGVIEWID.Primary_guid, out _, out _, out IVsWindowFrame frame);
                     frame?.Show();
                 };
-                content.PopulateTree(rdt.Select(s => s.Moniker).ToList());
+                content.PopulateTree(tabs);
             });
         }
     }
