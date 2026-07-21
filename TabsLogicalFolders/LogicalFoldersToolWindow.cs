@@ -28,6 +28,9 @@ namespace TabsLogicalFolders
         private uint rdtCookie;
         private LogicalFoldersToolWindowControl content;
         private HashSet<(string Caption, string Moniker)> lastTabs = new HashSet<(string, string)>();
+        private Dictionary<string, List<string>> logicalFolders = new Dictionary<string, List<string>>();
+        public const string UNGROUPEDNAME = "Ungrouped";
+        public const string OTHERNAME = "Other";
         /// <summary>
         /// Initializes a new instance of the <see cref="LogicalFoldersToolWindow"/> class.
         /// </summary>
@@ -129,7 +132,32 @@ namespace TabsLogicalFolders
             if (currentTabs.SetEquals(lastTabs)) return;
 
             lastTabs = currentTabs;
-            content.PopulateTree(tabs);
+
+            var grouped = new Dictionary<string, List<LogicalFoldersToolWindowControl.TabInfo>>();
+            grouped[UNGROUPEDNAME] = new List<LogicalFoldersToolWindowControl.TabInfo>();
+            foreach (var folderName in logicalFolders.Keys)
+            {
+                grouped[folderName] = new List<LogicalFoldersToolWindowControl.TabInfo>();
+            }
+
+            foreach (var tab in tabs)
+            {
+                if (tab.Kind == LogicalFoldersToolWindowControl.NodeKind.Document)
+                    grouped[GetFolderForMoniker(tab.Moniker)].Add(tab);
+            }
+
+            var otherTabs = tabs.Where(t => t.Kind == LogicalFoldersToolWindowControl.NodeKind.Other).ToList();
+
+            content.PopulateTree(grouped, otherTabs);
+        }
+
+        public string GetFolderForMoniker(string moniker)
+        {
+            foreach (var dir in logicalFolders)
+            {
+                if (dir.Value.Contains(moniker)) return dir.Key;
+            }
+            return UNGROUPEDNAME;
         }
 
         public int OnAfterAttributeChange(uint docCookie, uint grfAttribs) => VSConstants.S_OK;

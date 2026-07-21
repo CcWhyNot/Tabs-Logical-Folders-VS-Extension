@@ -28,20 +28,26 @@ namespace TabsLogicalFolders
             this.InitializeComponent();
         }
 
-        public void PopulateTree(List<TabInfo> items)
+        public void PopulateTree(Dictionary<string, List<TabInfo>> grouped, List<TabInfo> otherTabs)
         {
             LogicalFolderTree.Items.Clear();
 
-            var ungroupedNode = new TreeViewItem { Header = "Ungrouped", Tag = (kind: NodeKind.Folder, Moniker: (string)null) };
-            var otherNode = new TreeViewItem { Header = "Other", Tag = (NodeKind.Other, Moniker: (string)null) };
-            foreach (var item in items)
+            foreach (var folder in grouped)
             {
-                if (item.Kind == NodeKind.Document)
-                    ungroupedNode.Items.Add(new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Document, Moniker: item.Moniker) });
-                else if (item.Kind == NodeKind.Other)
-                    otherNode.Items.Add(new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Other, Moniker: item.Moniker) });
+                var folderNode = new TreeViewItem { Header = folder.Key, Tag = (Kind: NodeKind.Folder, Moniker: (string)null) };
+
+                foreach (var item in folder.Value)
+                {
+                    folderNode.Items.Add(new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Document, Moniker: item.Moniker) });
+                }
+                LogicalFolderTree.Items.Add(folderNode);
             }
-            LogicalFolderTree.Items.Add(ungroupedNode);
+
+            var otherNode = new TreeViewItem { Header = LogicalFoldersToolWindow.OTHERNAME, Tag = (NodeKind.Other, Moniker: (string)null) };
+            foreach (var item in otherTabs)
+            {
+                otherNode.Items.Add(new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Other, Moniker: item.Moniker) });
+            }
             LogicalFolderTree.Items.Add(otherNode);
         }
 
