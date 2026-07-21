@@ -50,6 +50,9 @@
     <Compile Include="LogicalFoldersToolWindowControl.xaml.cs">
       <DependentUpon>LogicalFoldersToolWindowControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="NewGroupDialog.xaml.cs">
+      <DependentUpon>NewGroupDialog.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TabsLogicalFoldersPackage.cs" />
   </ItemGroup>
@@ -82,6 +85,10 @@
   </ItemGroup>
   <ItemGroup>
     <Page Include="LogicalFoldersToolWindowControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="NewGroupDialog.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

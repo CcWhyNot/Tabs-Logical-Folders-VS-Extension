@@ -57,6 +57,15 @@ namespace TabsLogicalFolders
                 frame?.Show();
             };
 
+            content.NewGroupRequested += groupName =>
+            {
+                if (!string.IsNullOrWhiteSpace(groupName) && !logicalFolders.ContainsKey(groupName))
+                {
+                    logicalFolders[groupName] = new List<string>();
+                    RepaintTree(GetOpenTabs());
+                }
+            };
+
             rdt = new RunningDocumentTable(this);
             rdtCookie = rdt.Advise(this);
 
@@ -96,8 +105,7 @@ namespace TabsLogicalFolders
             base.Dispose(disposing);
         }
 
-
-        private void RefreshTree()
+        private List<LogicalFoldersToolWindowControl.TabInfo> GetOpenTabs()
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -127,12 +135,11 @@ namespace TabsLogicalFolders
                 });
 
             }
+            return tabs;
+        }
 
-            var currentTabs = new HashSet<(string, string)>(tabs.Select(t => (t.Caption, t.Moniker)));
-            if (currentTabs.SetEquals(lastTabs)) return;
-
-            lastTabs = currentTabs;
-
+        private void RepaintTree(List<LogicalFoldersToolWindowControl.TabInfo> tabs)
+        {
             var grouped = new Dictionary<string, List<LogicalFoldersToolWindowControl.TabInfo>>();
             grouped[UNGROUPEDNAME] = new List<LogicalFoldersToolWindowControl.TabInfo>();
             foreach (var folderName in logicalFolders.Keys)
@@ -149,6 +156,20 @@ namespace TabsLogicalFolders
             var otherTabs = tabs.Where(t => t.Kind == LogicalFoldersToolWindowControl.NodeKind.Other).ToList();
 
             content.PopulateTree(grouped, otherTabs);
+        }
+
+        private void RefreshTree()
+        {
+            var tabs = GetOpenTabs();
+
+            var currentTabs = new HashSet<(string, string)>(tabs.Select(t => (t.Caption, t.Moniker)));
+            if (currentTabs.SetEquals(lastTabs)) return;
+
+            lastTabs = currentTabs;
+
+            RepaintTree(tabs);
+
+
         }
 
         public string GetFolderForMoniker(string moniker)

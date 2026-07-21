@@ -11,6 +11,7 @@ namespace TabsLogicalFolders
     public partial class LogicalFoldersToolWindowControl : UserControl
     {
         public event Action<string> DocumentActivated;
+        public event Action<string> NewGroupRequested;
         public enum NodeKind { Folder, Document, Other };
 
         public struct TabInfo
@@ -61,6 +62,14 @@ namespace TabsLogicalFolders
             {
                 DocumentActivated?.Invoke(moniker);
             }
+        }
+
+        private void NewFolderButton_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new NewGroupDialog();
+            if (dialog.ShowDialog() == true)
+                NewGroupRequested?.Invoke(dialog.GroupName);
+
         }
     }
 }
