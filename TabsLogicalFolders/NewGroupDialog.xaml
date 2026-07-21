@@ -2,12 +2,13 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="New Group" Height="120" Width="300"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterOwner"
+        Loaded="Window_Loaded">
     <StackPanel Margin="10">
         <TextBox x:Name="NameTextBox" Margin="0,0,0,10"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="OK" Width="70" Click="OkButton_Click" Margin="0,0,5,0"/>
-            <Button Content="Cancel" Width="70" Click="CancelButton_Click"/>
+            <Button Content="OK" IsDefault="True" Width="70" Click="OkButton_Click" Margin="0,0,5,0"/>
+            <Button Content="Cancel" IsCancel="True" Width="70" Click="CancelButton_Click"/>
         </StackPanel>
     </StackPanel>
 </Window>

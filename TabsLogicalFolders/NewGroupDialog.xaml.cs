@@ -23,5 +23,10 @@ namespace TabsLogicalFolders
         {
             DialogResult = false;
         }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            NameTextBox.Focus();
+        }
     }
 }
