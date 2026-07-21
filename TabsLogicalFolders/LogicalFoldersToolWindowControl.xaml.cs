@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace TabsLogicalFolders
 {
@@ -12,6 +13,7 @@ namespace TabsLogicalFolders
     {
         public event Action<string> DocumentActivated;
         public event Action<string> NewGroupRequested;
+        public event Action<string, string> DocumentDroppedOnFolder;
         public enum NodeKind { Folder, Document, Other };
 
         public struct TabInfo
@@ -21,6 +23,8 @@ namespace TabsLogicalFolders
             public NodeKind Kind;
         }
 
+
+        private HashSet<string> expandedFolders = new HashSet<string>();
         /// <summary>
         /// Initializes a new instance of the <see cref="LogicalFoldersToolWindowControl"/> class.
         /// </summary>
@@ -37,10 +41,56 @@ namespace TabsLogicalFolders
             {
                 var folderNode = new TreeViewItem { Header = folder.Key, Tag = (Kind: NodeKind.Folder, Moniker: (string)null) };
 
+                folderNode.IsExpanded = expandedFolders.Contains(folder.Key);
+                folderNode.Expanded += (s, e) => expandedFolders.Add(folder.Key);
+                folderNode.Collapsed += (s, e) => expandedFolders.Remove(folder.Key);
+
+                folderNode.AllowDrop = true;
+                folderNode.DragOver += (s, e) =>
+                {
+                    e.Effects = DragDropEffects.Move;
+                    e.Handled = true;
+                };
+
+                folderNode.Drop += (s, e) =>
+                {
+                    if (e.Data.GetDataPresent(DataFormats.StringFormat))
+                    {
+                        string moniker = (string)e.Data.GetData(DataFormats.StringFormat);
+                        DocumentDroppedOnFolder?.Invoke(moniker, folder.Key);
+                    }
+                    e.Handled = true;
+                };
+
                 foreach (var item in folder.Value)
                 {
-                    folderNode.Items.Add(new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Document, Moniker: item.Moniker) });
+                    var leaf = new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Document, Moniker: item.Moniker) };
+
+                    Point? dragStartPoint = null;
+                    leaf.PreviewMouseLeftButtonDown += (s, e) =>
+                    {
+                        dragStartPoint = e.GetPosition(null);
+                    };
+
+                    leaf.PreviewMouseMove += (s, e) =>
+                    {
+                        if (dragStartPoint.HasValue && e.LeftButton == MouseButtonState.Pressed)
+                        {
+                            var diff = dragStartPoint.Value - e.GetPosition(null);
+                            if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                                Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+                            {
+                                DragDrop.DoDragDrop(leaf, item.Moniker, DragDropEffects.Move);
+                                Mouse.Capture(null);
+                                dragStartPoint = null;
+                            }
+                        }
+
+                    };
+
+                    folderNode.Items.Add(leaf);
                 }
+
                 LogicalFolderTree.Items.Add(folderNode);
             }
 

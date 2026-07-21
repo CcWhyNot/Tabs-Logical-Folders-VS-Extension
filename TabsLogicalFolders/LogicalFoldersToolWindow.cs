@@ -66,6 +66,17 @@ namespace TabsLogicalFolders
                 }
             };
 
+            content.DocumentDroppedOnFolder += (moniker, targetFolder) =>
+            {
+                foreach (var lista in logicalFolders.Values)
+                    lista.Remove(moniker);
+
+                if (targetFolder != UNGROUPEDNAME && logicalFolders.ContainsKey(targetFolder))
+                    logicalFolders[targetFolder].Add(moniker);
+
+                RepaintTree(GetOpenTabs());
+            };
+
             rdt = new RunningDocumentTable(this);
             rdtCookie = rdt.Advise(this);
 
