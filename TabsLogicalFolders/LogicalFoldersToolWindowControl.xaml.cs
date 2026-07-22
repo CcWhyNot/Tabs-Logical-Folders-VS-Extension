@@ -14,6 +14,12 @@ namespace TabsLogicalFolders
         public event Action<string> DocumentActivated;
         public event Action<string> NewGroupRequested;
         public event Action<string, string> DocumentDroppedOnFolder;
+
+        //CONTEXT MENU
+        public event Action<string> FolderDeleteRequested;
+        public event Action<string, string> FolderRenameRequested;
+
+
         public enum NodeKind { Folder, Document, Other };
 
         public struct TabInfo
@@ -40,6 +46,63 @@ namespace TabsLogicalFolders
             foreach (var folder in grouped)
             {
                 var folderNode = new TreeViewItem { Header = folder.Key, Tag = (Kind: NodeKind.Folder, Moniker: (string)null) };
+
+                if (folder.Key != LogicalFoldersToolWindow.UNGROUPEDNAME)
+                {
+                    var contextMenu = new ContextMenu();
+
+                    var deleteItem = new MenuItem { Header = "Delete" };
+                    deleteItem.Click += (s, e) => FolderDeleteRequested?.Invoke(folder.Key);
+
+
+                    var renameItem = new MenuItem { Header = "Rename" };
+                    renameItem.Click += (s, e) =>
+                    {
+                        bool resolved = false;
+                        var textBox = new TextBox { Text = folder.Key };
+                        folderNode.Header = textBox;
+
+                        textBox.Loaded += (s2, e2) =>
+                        {
+                            textBox.Focus();
+                            textBox.SelectAll();
+                        };
+
+                        textBox.PreviewKeyDown += (s2, e2) =>
+                        {
+                            if (e2.Key == Key.Enter)
+                            {
+                                resolved = true;
+                                FolderRenameRequested?.Invoke(folder.Key, textBox.Text);
+                                e2.Handled = true;
+                            }
+                            // TODO : FIX escape. VS take control at escape key
+                            //else if (e2.Key == Key.Escape)
+                            //{
+                            //    resolved = true;
+                            //    folderNode.Header = folder.Key;
+                            //    e2.Handled = true;
+                            //}
+                        };
+
+                        textBox.LostFocus += (s2, e2) =>
+                        {
+                            if (!resolved)
+                            {
+                                resolved = true;
+                                folderNode.Header = folder.Key;
+                            }
+                        };
+                    };
+
+                    contextMenu.Items.Add(renameItem);
+                    contextMenu.Items.Add(deleteItem);
+
+
+                    folderNode.ContextMenu = contextMenu;
+
+                }
+
 
                 folderNode.IsExpanded = expandedFolders.Contains(folder.Key);
                 folderNode.Expanded += (s, e) => expandedFolders.Add(folder.Key);

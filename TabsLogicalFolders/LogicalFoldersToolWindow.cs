@@ -77,6 +77,25 @@ namespace TabsLogicalFolders
                 RepaintTree(GetOpenTabs());
             };
 
+
+            // CONTEXT MENU
+            content.FolderDeleteRequested += folderName =>
+            {
+                logicalFolders.Remove(folderName);
+                RepaintTree(GetOpenTabs());
+            };
+
+            content.FolderRenameRequested += (oldName, newName) =>
+            {
+                if (!string.IsNullOrWhiteSpace(newName) && newName != oldName
+                && logicalFolders.ContainsKey(oldName) && !logicalFolders.ContainsKey(newName))
+                {
+                    logicalFolders[newName] = logicalFolders[oldName];
+                    logicalFolders.Remove(oldName);
+                }
+                RepaintTree(GetOpenTabs());
+            };
+
             rdt = new RunningDocumentTable(this);
             rdtCookie = rdt.Advise(this);
 
