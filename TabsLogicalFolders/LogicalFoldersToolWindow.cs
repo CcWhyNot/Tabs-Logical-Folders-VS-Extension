@@ -96,6 +96,14 @@ namespace TabsLogicalFolders
                 RepaintTree(GetOpenTabs());
             };
 
+            // CLOSE DOCUMENT
+            content.DocumentCloseRequested += moniker =>
+            {
+                var frame = FindFrameByMoniker(moniker);
+                frame?.CloseFrame((uint)__FRAMECLOSE.FRAMECLOSE_PromptSave);
+                RepaintTree(GetOpenTabs());
+            };
+
             rdt = new RunningDocumentTable(this);
             rdtCookie = rdt.Advise(this);
 

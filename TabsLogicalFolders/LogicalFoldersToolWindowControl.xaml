@@ -11,6 +11,6 @@
              Name="MyToolWindow">
     <Grid>
         <Button Content="New folder" x:Name="NewFolderButton" Click="NewFolderButton_Click" VerticalAlignment="Top" Margin="0,0,220,0"/>
-        <TreeView x:Name="LogicalFolderTree" SelectedItemChanged="LogicalFolderTree_SelectedItemChanged" Margin="0,20,0,0"/>
+        <TreeView x:Name="LogicalFolderTree" SelectedItemChanged="LogicalFolderTree_SelectedItemChanged" Margin="0,20,0,0" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
     </Grid>
 </UserControl>

@@ -19,6 +19,7 @@ namespace TabsLogicalFolders
         public event Action<string> FolderDeleteRequested;
         public event Action<string, string> FolderRenameRequested;
 
+        public event Action<string> DocumentCloseRequested;
 
         public enum NodeKind { Folder, Document, Other };
 
@@ -47,7 +48,11 @@ namespace TabsLogicalFolders
             {
                 var folderNode = new TreeViewItem { Header = folder.Key, Tag = (Kind: NodeKind.Folder, Moniker: (string)null) };
 
-                if (folder.Key != LogicalFoldersToolWindow.UNGROUPEDNAME)
+                if (folder.Key == LogicalFoldersToolWindow.UNGROUPEDNAME)
+                {
+                    // TODO: PONER AQUI QUE NO SE PUEDA SELECCIONAR
+                }
+                else
                 {
                     var contextMenu = new ContextMenu();
 
@@ -127,7 +132,22 @@ namespace TabsLogicalFolders
 
                 foreach (var item in folder.Value)
                 {
-                    var leaf = new TreeViewItem { Header = item.Caption, Tag = (Kind: NodeKind.Document, Moniker: item.Moniker) };
+                    var closeButton = new Button { Content = "X", Padding = new Thickness(4, 0, 4, 0) };
+                    closeButton.Click += (s, e) => DocumentCloseRequested?.Invoke(item.Moniker);
+
+                    var headerGrid = new Grid();
+                    headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var textBlock = new TextBlock { Text = item.Caption, VerticalAlignment = VerticalAlignment.Center };
+
+                    Grid.SetColumn(textBlock, 0);
+                    Grid.SetColumn(closeButton, 1);
+
+                    headerGrid.Children.Add(textBlock);
+                    headerGrid.Children.Add(closeButton);
+
+                    var leaf = new TreeViewItem { Header = headerGrid, Tag = (Kind: NodeKind.Document, Moniker: item.Moniker), HorizontalContentAlignment = HorizontalAlignment.Stretch };
 
                     Point? dragStartPoint = null;
                     leaf.PreviewMouseLeftButtonDown += (s, e) =>
