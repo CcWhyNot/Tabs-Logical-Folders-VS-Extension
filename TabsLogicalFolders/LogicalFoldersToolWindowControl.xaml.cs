@@ -132,6 +132,17 @@ namespace TabsLogicalFolders
 
                 foreach (var item in folder.Value)
                 {
+                    var contextMenu = new ContextMenu();
+                    var moveToItem = new MenuItem { Header = "Move to" };
+                    foreach (var folderItem in grouped)
+                    {
+                        if (folderItem.Key == folder.Key) continue;
+                        var folderMenuItem = new MenuItem { Header = folderItem.Key };
+                        folderMenuItem.Click += (s2, e2) => DocumentDroppedOnFolder?.Invoke(item.Moniker, folderItem.Key);
+                        moveToItem.Items.Add(folderMenuItem);
+                    }
+                    contextMenu.Items.Add(moveToItem);
+
                     var closeButton = new Button { Content = "X", Padding = new Thickness(4, 0, 4, 0) };
                     closeButton.Click += (s, e) => DocumentCloseRequested?.Invoke(item.Moniker);
 
@@ -171,6 +182,7 @@ namespace TabsLogicalFolders
 
                     };
 
+                    leaf.ContextMenu = contextMenu;
                     folderNode.Items.Add(leaf);
                 }
 
